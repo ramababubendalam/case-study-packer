@@ -1,0 +1,138 @@
+---
+- name: disable selinux
+  selinux: state=disabled
+
+- name: update all packages
+  yum: name=* state=latest
+
+- name: activate epel releases
+  yum: name='epel-release' state=latest
+
+- name: install essential packages
+  yum: name={{ item }} state=latest
+  with_items:
+    - 'ipa-client'
+    - 'htop'
+    - 'sysstat'
+    - 'lsof'
+    - 'tcpdump'
+    - 'iotop'
+    - 'tmux'
+    - 'nc'
+    - 'vim'
+    - 'lvm2'
+    - 'awscli'
+    - 'python-pip'
+
+  # /media volume
+- name: format media volume
+  filesystem: fstype=ext4 dev=/dev/xvdd
+
+- name: mount media volume
+  mount: name=/media src=/dev/xvdd fstype=ext4 state=mounted
+  
+- name: add autoresize service unit
+  template:
+    src: media-volume-resize.service
+    dest: /etc/systemd/system/media-volume-resize.service
+    
+- name: enable autoresize service
+  systemd:
+    name: media-volume-resize.service
+    enabled: yes
+    daemon_reload: yes
+
+# install and configure docker
+- name: enable docker-repo
+  shell: yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+
+- name: install docker
+  yum: name=docker-ce-{{ docker_version }}.el7 state=present
+
+- name: configure docker service
+  systemd: name=docker enabled=yes
+
+- name: docker config folder
+  file: path=/etc/docker/ state=directory
+
+- name: docker daemon config
+  template: src=docker-daemon.json dest=/etc/docker/daemon.json
+
+- name: update docker.service
+  lineinfile:
+    path: /usr/lib/systemd/system/docker.service
+    insertafter: 'Restart=on-failure'
+    line: 'RestartSec=10'
+    owner: root
+    group: root
+    mode: 0644
+
+- name: update docker.service
+  lineinfile:
+    path: /usr/lib/systemd/system/docker.service
+    regexp: '^StartLimitBurst='
+    line: 'StartLimitBurst=20'
+    owner: root
+    group: root
+    mode: 0644
+
+- name: update docker.service
+  lineinfile:
+    path: /usr/lib/systemd/system/docker.service
+    regexp: '^StartLimitInterval='
+    line: 'StartLimitInterval=300'
+    owner: root
+    group: root
+    mode: 0644
+
+- name: reload systemd daemon
+  systemd:
+      daemon_reload: yes
+
+
+- name: install docker-compose
+  pip: 
+    name: docker-compose 
+    version: "{{ docker_compose_version }}"
+
+# install and configure telegraf 
+
+- name: configure telegraf repo
+  yum_repository:
+    name: telegraf
+    description: telegraf
+    baseurl: https://repos.influxdata.com/centos/$releasever/$basearch/stable
+    gpgcheck: yes
+    gpgkey: https://repos.influxdata.com/influxdb.key
+
+- name: install telegraf
+  yum: 
+    name: "telegraf-{{ telegraf_version }}"
+    state: present
+
+- name: add telegraf user to docker group
+  user: 
+    name: telegraf 
+    groups: docker 
+    append: yes
+
+- name: telegraf service
+  service: 
+    name: telegraf 
+    enabled: "{{ telegraf_enabled }}"
+
+- name: telegraf main config file
+  template: 
+    src: "telegraf.conf"
+    dest: /etc/telegraf/telegraf.conf
+
+- name: telegraf linux host config file
+  copy: 
+    src: telegraf_linux_host.conf
+    dest: /etc/telegraf/telegraf.d/telegraf_linux_host.conf
+
+- name: telegraf docker config file
+  copy: 
+    src: telegraf_docker.conf
+    dest: /etc/telegraf/telegraf.d/telegraf_docker.conf
+

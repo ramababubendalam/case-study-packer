@@ -1,0 +1,13 @@
+- name: Volumes and basic setup
+  hosts: all
+  become: yes
+  vars:
+    docker_version: 18.06.1.ce-3
+    docker_compose_version: 1.22.0
+    telegraf_version: 1.8.1-1
+    telegraf_enabled: yes
+    telegraf_influxdb_url: http://grafid.photbox.com:8086
+    telegraf_influxdb_db: container_hosts
+    telegraf_influxdb_auth: false
+  tasks:
+    - include: common_tasks.yml

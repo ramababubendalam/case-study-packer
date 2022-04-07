@@ -1,0 +1,8 @@
+[Unit]
+After=local-fs.target
+
+[Service]
+ExecStart=/sbin/resize2fs /dev/xvdd
+
+[Install]
+WantedBy=default.target

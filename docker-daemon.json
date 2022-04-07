@@ -1,0 +1,19 @@
+{
+    "log-driver": "json-file",
+    "log-opts": {
+      "max-size": "50m",
+      "max-file": "3",
+      "compress": "true"
+    },
+    "storage-driver": "devicemapper",
+    "storage-opts": [
+      "dm.directlvm_device=/dev/xvdb",
+      "dm.thinp_percent=95",
+      "dm.thinp_metapercent=1",
+      "dm.thinp_autoextend_threshold=80",
+      "dm.thinp_autoextend_percent=20",
+      "dm.directlvm_device_force=false",
+      "dm.use_deferred_removal=true",
+      "dm.use_deferred_deletion=true"
+    ]
+}

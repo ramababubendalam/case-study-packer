@@ -1,0 +1,54 @@
+{
+    "variables": {
+        "name": "centos7-docker-base-{{env `BUILD`}}",
+        "aws_key": "{{env `AWS_KEY`}}",
+        "aws_secret": "{{env `AWS_SEC`}}",
+        "aws_region": "eu-west-1",
+        "base_image": "ami-7abd0209",
+        "subnet": "subnet-eccfa79b"
+    },
+    "builders": [
+        {
+            "type": "amazon-ebs",
+            "region": "{{user `aws_region`}}",
+            "access_key": "{{user `aws_key`}}",
+            "secret_key": "{{user `aws_secret`}}",
+            "source_ami": "{{user `base_image`}}",
+            "name":  "{{user `name`}}",
+            "ami_name": "{{user `name`}}",
+            "instance_type": "t2.medium",
+            "ssh_username": "centos",
+            "ssh_pty" : true,
+            "subnet_id": "{{user `subnet`}}",
+            "launch_block_device_mappings": [
+                {
+                    "delete_on_termination": true,
+                    "device_name": "/dev/sda1",
+                    "volume_type": "gp2"
+                },
+                {
+                    "delete_on_termination": true,
+                    "device_name": "/dev/sdd",
+                    "volume_size": 10,
+                    "volume_type": "gp2"
+                },
+                {
+                    "delete_on_termination": true,
+                    "device_name": "/dev/sdb",
+                    "volume_size": 10,
+                    "volume_type": "gp2"
+                }
+            ],
+            "snapshot_tags": {
+                "builder": "packer"
+            }
+        }
+    ],
+    "provisioners": [
+
+        {
+            "type": "ansible",
+            "playbook_file": "playbook.yml"
+        }
+    ]
+}
